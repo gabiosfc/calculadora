@@ -6,7 +6,6 @@ import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var inputField: EditText
     private var currentNumber = ""
     private var firstNumber = ""
@@ -15,9 +14,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         inputField = findViewById(R.id.inputField)
-
         val button0: Button = findViewById(R.id.button0)
         val button1: Button = findViewById(R.id.button1)
         val button2: Button = findViewById(R.id.button2)
@@ -64,7 +61,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setOperator(op: String) {
-        firstNumber = currentNumber
+        if (currentNumber.isNotEmpty()) {
+            firstNumber = currentNumber
+        }
         operator = op
         currentNumber = ""
     }
@@ -77,9 +76,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun calculateResult() {
+        if (currentNumber.isEmpty() || firstNumber.isEmpty()) return
+
         val secondNumber = currentNumber
         var result = 0.0
-
         try {
             when (operator) {
                 "+" -> result = firstNumber.toDouble() + secondNumber.toDouble()
@@ -94,6 +94,8 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+            firstNumber = result.toString()
+            currentNumber = ""
             inputField.setText(result.toString())
         } catch (e: Exception) {
             inputField.setText("Error")
