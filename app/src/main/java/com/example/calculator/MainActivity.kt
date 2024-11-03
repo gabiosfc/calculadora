@@ -7,9 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
     private lateinit var inputField: EditText
-    private var currentNumber = ""
-    private var firstNumber = ""
-    private var operator = ""
+    private var currentExpression = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,72 +31,92 @@ class MainActivity : AppCompatActivity() {
         val buttonEqual: Button = findViewById(R.id.buttonEqual)
 
         // Define click listeners for numeric buttons
-        button0.setOnClickListener { appendNumber("0") }
-        button1.setOnClickListener { appendNumber("1") }
-        button2.setOnClickListener { appendNumber("2") }
-        button3.setOnClickListener { appendNumber("3") }
-        button4.setOnClickListener { appendNumber("4") }
-        button5.setOnClickListener { appendNumber("5") }
-        button6.setOnClickListener { appendNumber("6") }
-        button7.setOnClickListener { appendNumber("7") }
-        button8.setOnClickListener { appendNumber("8") }
-        button9.setOnClickListener { appendNumber("9") }
+        button0.setOnClickListener { appendToExpression("0") }
+        button1.setOnClickListener { appendToExpression("1") }
+        button2.setOnClickListener { appendToExpression("2") }
+        button3.setOnClickListener { appendToExpression("3") }
+        button4.setOnClickListener { appendToExpression("4") }
+        button5.setOnClickListener { appendToExpression("5") }
+        button6.setOnClickListener { appendToExpression("6") }
+        button7.setOnClickListener { appendToExpression("7") }
+        button8.setOnClickListener { appendToExpression("8") }
+        button9.setOnClickListener { appendToExpression("9") }
 
         // Define click listeners for operations
-        buttonAdd.setOnClickListener { setOperator("+") }
-        buttonSubtract.setOnClickListener { setOperator("-") }
-        buttonMultiply.setOnClickListener { setOperator("*") }
-        buttonDivide.setOnClickListener { setOperator("/") }
+        buttonAdd.setOnClickListener { appendToExpression("+") }
+        buttonSubtract.setOnClickListener { appendToExpression("-") }
+        buttonMultiply.setOnClickListener { appendToExpression("*") }
+        buttonDivide.setOnClickListener { appendToExpression("/") }
 
         // Define click listeners for clear and equals
         buttonClear.setOnClickListener { clear() }
         buttonEqual.setOnClickListener { calculateResult() }
     }
 
-    private fun appendNumber(number: String) {
-        currentNumber += number
-        inputField.setText(currentNumber)
-    }
-
-    private fun setOperator(op: String) {
-        if (currentNumber.isNotEmpty()) {
-            firstNumber = currentNumber
-        }
-        operator = op
-        currentNumber = ""
+    private fun appendToExpression(value: String) {
+        currentExpression += value
+        inputField.setText(currentExpression)
     }
 
     private fun clear() {
-        currentNumber = ""
-        firstNumber = ""
-        operator = ""
+        currentExpression = ""
         inputField.setText("")
     }
 
     private fun calculateResult() {
-        if (currentNumber.isEmpty() || firstNumber.isEmpty()) return
-
-        val secondNumber = currentNumber
-        var result = 0.0
         try {
-            when (operator) {
-                "+" -> result = firstNumber.toDouble() + secondNumber.toDouble()
-                "-" -> result = firstNumber.toDouble() - secondNumber.toDouble()
-                "*" -> result = firstNumber.toDouble() * secondNumber.toDouble()
-                "/" -> {
-                    if (secondNumber == "0") {
-                        inputField.setText("Error")
-                        return
-                    } else {
-                        result = firstNumber.toDouble() / secondNumber.toDouble()
-                    }
-                }
-            }
-            firstNumber = result.toString()
-            currentNumber = ""
+            val result = eval(currentExpression)
             inputField.setText(result.toString())
+            currentExpression = result.toString()
         } catch (e: Exception) {
             inputField.setText("Error")
+        }
+    }
+
+    private fun eval(expression: String): Double {
+        val tokens = expression.toCharArray()
+
+        val values: MutableList<Double> = ArrayList()
+        val ops: MutableList<Char> = ArrayList()
+        var i = 0
+        while (i < tokens.size) {
+            if (tokens[i] == ' ') {
+                i++
+                continue
+            }
+            if (tokens[i] in '0'..'9' || tokens[i] == '.') {
+                val sb = StringBuilder()
+                while (i < tokens.size && (tokens[i] in '0'..'9' || tokens[i] == '.')) sb.append(tokens[i++])
+                values.add(sb.toString().toDouble())
+                i--
+            } else if (tokens[i] == '(') {
+                ops.add(tokens[i])
+            } else if (tokens[i] == ')') {
+                while (ops[ops.size - 1] != '(') values.add(applyOp(ops.removeAt(ops.size - 1), values.removeAt(values.size - 1), values.removeAt(values.size - 1)))
+                ops.removeAt(ops.size - 1)
+            } else if (tokens[i] == '+' || tokens[i] == '-' || tokens[i] == '*' || tokens[i] == '/') {
+                while (ops.isNotEmpty() && hasPrecedence(tokens[i], ops[ops.size - 1])) values.add(applyOp(ops.removeAt(ops.size - 1), values.removeAt(values.size - 1), values.removeAt(values.size - 1)))
+                ops.add(tokens[i])
+            }
+            i++
+        }
+
+        while (ops.isNotEmpty()) values.add(applyOp(ops.removeAt(ops.size - 1), values.removeAt(values.size - 1), values.removeAt(values.size - 1)))
+        return values[0]
+    }
+
+    private fun hasPrecedence(op1: Char, op2: Char): Boolean {
+        if (op2 == '(' || op2 == ')') return false
+        return !(op1 == '*' || op1 == '/') || !(op2 == '+' || op2 == '-')
+    }
+
+    private fun applyOp(op: Char, b: Double, a: Double): Double {
+        return when (op) {
+            '+' -> a + b
+            '-' -> a - b
+            '*' -> a * b
+            '/' -> if (b == 0.0) throw UnsupportedOperationException("Cannot divide by zero") else a / b
+            else -> 0.0
         }
     }
 }
